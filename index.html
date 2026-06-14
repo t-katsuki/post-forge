@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <!-- スマホでの自動ズームを防ぐため maximum-scale=1.0, user-scalable=no を指定 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  
+  <!-- PWA/iOSホーム画面追加時の設定 -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="POST FORGE">
+  <meta name="theme-color" content="#0B0F19">
+  
+  <title>POST FORGE for FLIP NEWS</title>
+  
+  <style>
+    /* CSS Variables: 米国スタートアップ風のダークモードカラーパレット */
+    :root {
+      --bg-color: #0B0F19;
+      --surface-color: #161E2E;
+      --surface-card: #1F2937;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-focus: #06B6D4;
+      --text-primary: #F9FAFB;
+      --text-secondary: #9CA3AF;
+      --accent-cyan: #06B6D4;
+      --accent-indigo: #6366F1;
+      --accent-gradient: linear-gradient(135deg, #06B6D4 0%, #6366F1 100%);
+      --accent-gradient-hover: linear-gradient(135deg, #0891b2 0%, #4f46e5 100%);
+      --x-color: #000000;
+      --x-color-hover: #111111;
+      
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-full: 9999px;
+      
+      --shadow-glow: 0 0 20px rgba(6, 182, 212, 0.15);
+      --transition-base: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Base Reset */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+      overflow-x: hidden;
+    }
+
+    /* App Layout Container */
+    .app-container {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      padding-bottom: 40px; /* 下部アクションエリアのためのスペース */
+    }
+
+    /* App Header */
+    .app-header {
+      text-align: center;
+      margin-top: 12px;
+      margin-bottom: 8px;
+    }
+
+    .app-header h1 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 4px;
+    }
+
+    .app-header .subtitle {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    /* UI Cards */
+    .card {
+      background-color: var(--surface-color);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    /* Form Styles */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .form-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Input & Textarea */
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .form-input, .form-textarea {
+      width: 100%;
+      background-color: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-size: 16px; /* 16px未満だとiOSで自動ズームされるため固定 */
+      padding: 12px 14px;
+      transition: var(--transition-base);
+      outline: none;
+    }
+
+    .form-input {
+      padding-right: 40px; /* クリアボタン用の余白 */
+    }
+
+    .form-input:focus, .form-textarea:focus {
+      border-color: var(--border-focus);
+      background-color: rgba(255, 255, 255, 0.05);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .form-textarea {
+      resize: none;
+      font-family: inherit;
+    }
+
+    /* Clear URL Button */
+    .clear-btn {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      border-radius: var(--radius-full);
+      transition: var(--transition-base);
+    }
+
+    .clear-btn:hover {
+      color: var(--text-primary);
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Category Pill Selector */
+    .category-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .category-pills {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .category-pill {
+      background-color: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 12px 6px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition-base);
+    }
+
+    .category-pill:active {
+      transform: scale(0.95);
+    }
+
+    .category-pill.active {
+      background: var(--accent-gradient);
+      border-color: transparent;
+      color: #FFFFFF;
+      box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+    }
+
+    /* Redraw Header section */
+    .redraw-section {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background-color: rgba(255, 255, 255, 0.02);
+      border: 1px dashed var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      margin-top: 4px;
+    }
+
+    .current-header-display {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+      word-break: break-all;
+    }
+
+    .redraw-btn {
+      background-color: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: var(--transition-base);
+    }
+
+    .redraw-btn:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .redraw-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* Preview Card */
+    .preview-card {
+      position: relative;
+    }
+
+    .preview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .preview-badge {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--accent-cyan);
+      background-color: rgba(6, 182, 212, 0.1);
+      padding: 4px 8px;
+      border-radius: var(--radius-full);
+      border: 1px solid rgba(6, 182, 212, 0.2);
+    }
+
+    .preview-area {
+      background-color: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-all;
+      min-height: 120px;
+      color: var(--text-primary);
+    }
+
+    /* Sticky Action Area at Bottom */
+    .action-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      transition: var(--transition-base);
+      border: none;
+    }
+
+    .btn-copy {
+      background: var(--accent-gradient);
+      color: #FFFFFF;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-copy:hover {
+      background: var(--accent-gradient-hover);
+    }
+
+    .btn-copy.copied {
+      background: var(--green-success);
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-x {
+      background-color: var(--x-color);
+      color: #FFFFFF;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-x:hover {
+      background-color: var(--x-color-hover);
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    /* Toast Notification */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 9999;
+      pointer-events: none;
+    }
+
+    .toast {
+      background-color: rgba(22, 30, 46, 0.95);
+      border: 1px solid var(--border-focus);
+      color: var(--text-primary);
+      padding: 12px 20px;
+      border-radius: var(--radius-full);
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), var(--shadow-glow);
+      opacity: 0;
+      transform: translateY(20px);
+      animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .toast.fade-out {
+      opacity: 0;
+      transform: translateY(-20px) translateX(-50%);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* App Info Footer */
+    .app-footer {
+      text-align: center;
+      margin-top: 8px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.3);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- Header -->
+    <header class="app-header">
+      <h1>POST FORGE</h1>
+      <p class="subtitle">X Post Message Generator</p>
+    </header>
+
+    <!-- Main Input Card -->
+    <section class="card">
+      
+      <!-- Article URL Input -->
+      <div class="form-group">
+        <label for="article-url" class="form-label">記事URL</label>
+        <div class="input-wrapper">
+          <input type="url" id="article-url" class="form-input" placeholder="https://flipnews.app/articles/123" autocomplete="off" spellcheck="false">
+          <button type="button" id="clear-url-btn" class="clear-btn" aria-label="URLをクリア">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Intro Message Area -->
+      <div class="form-group">
+        <label for="intro-message" class="form-label">冒頭メッセージ (任意)</label>
+        <textarea id="intro-message" class="form-textarea" placeholder="Xで伝えたい一言（空でも可）" rows="3" spellcheck="false"></textarea>
+      </div>
+
+      <!-- Category Pills -->
+      <div class="form-group category-container">
+        <label class="form-label">カテゴリ選択</label>
+        <div id="category-pills" class="category-pills" role="radiogroup" aria-label="カテゴリ">
+          <button type="button" class="category-pill active" data-category="経済">経済</button>
+          <button type="button" class="category-pill" data-category="テクノロジー">IT</button>
+          <button type="button" class="category-pill" data-category="スポーツ">スポーツ</button>
+          <button type="button" class="category-pill" data-category="社会">社会</button>
+          <button type="button" class="category-pill" data-category="サイエンス">科学</button>
+          <button type="button" class="category-pill" data-category="エンタメ">エンタメ</button>
+        </div>
+      </div>
+
+      <!-- Redraw Header -->
+      <div class="form-group">
+        <label class="form-label">ヘッダー定型文</label>
+        <div class="redraw-section">
+          <div id="current-header" class="current-header-display">...</div>
+          <button type="button" id="redraw-btn" class="redraw-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            別の文に
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Preview Card -->
+    <section class="card preview-card">
+      <div class="preview-header">
+        <span class="form-label">プレビュー</span>
+        <span class="preview-badge">REALTIME</span>
+      </div>
+      <pre id="preview-area" class="preview-area"></pre>
+    </section>
+
+    <!-- Action Bar -->
+    <div class="action-group">
+      <button type="button" id="copy-btn" class="btn btn-copy">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+        <span>コピー</span>
+      </button>
+      <a id="x-post-btn" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-x">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        投稿する
+      </a>
+    </div>
+
+    <footer class="app-footer">
+      POST FORGE for FLIP NEWS - Standalone Tool
+    </footer>
+
+  </div>
+
+  <!-- Toast Message Area -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script>
+    // JS定数: ハッシュタグの定義 (カテゴリ固定メイン1個 + ブランドタグ2個)
+    const HASHTAGS = {
+      '経済': '#経済ニュース #FLIPNEWS #頑張らないで読もう',
+      'テクノロジー': '#テクノロジー #FLIPNEWS #頑張らないで読もう',
+      'スポーツ': '#スポーツニュース #FLIPNEWS #頑張らないで読もう',
+      '社会': '#ニュース #FLIPNEWS #頑張らないで読もう',
+      'サイエンス': '#サイエンス #FLIPNEWS #頑張らないで読もう',
+      'エンタメ': '#エンタメ #FLIPNEWS #頑張らないで読もう'
+    };
+
+    // JS定数: ヘッダー定型文 (10種)
+    const HEADERS = [
+      '続きはアプリで ▼',
+      '3分でまとめ ▼',
+      'スワイプで読む ▼',
+      'サクッと3分で全文 ▼',
+      '頑張らずに読む ▼',
+      'アプリで気楽に ▼',
+      '全部まとめて読む ▼',
+      '結果と背景を3分で ▼',
+      '影響を3分でチェック ▼',
+      '無料・登録不要で読む ▼'
+    ];
+
+    // アプリケーション状態
+    let currentHeaderIndex = -1;
+    let selectedCategory = '経済';
+
+    // DOM要素のキャッシュ
+    const articleUrlInput = document.getElementById('article-url');
+    const clearUrlBtn = document.getElementById('clear-url-btn');
+    const introMsgInput = document.getElementById('intro-message');
+    const categoryPillsContainer = document.getElementById('category-pills');
+    const currentHeaderDisplay = document.getElementById('current-header');
+    const redrawBtn = document.getElementById('redraw-btn');
+    const previewArea = document.getElementById('preview-area');
+    const copyBtn = document.getElementById('copy-btn');
+    const xPostBtn = document.getElementById('x-post-btn');
+    const toastContainer = document.getElementById('toast-container');
+
+    // ヘッダー定型文の決定 (重複防止ロジック)
+    function rollHeader() {
+      let nextIndex;
+      do {
+        nextIndex = Math.floor(Math.random() * HEADERS.length);
+      } while (nextIndex === currentHeaderIndex && HEADERS.length > 1);
+      
+      currentHeaderIndex = nextIndex;
+      currentHeaderDisplay.textContent = HEADERS[currentHeaderIndex];
+    }
+
+    // プレビューのリアルタイム生成と描画
+    function updatePreview() {
+      const articleUrl = articleUrlInput.value.trim();
+      const introMsg = introMsgInput.value.trim();
+      const currentHeader = HEADERS[currentHeaderIndex] || '';
+      const tags = HASHTAGS[selectedCategory] || '';
+
+      // フォーマット:
+      // {冒頭メッセージ（空なら空行）}
+      // (改行)
+      // {ヘッダー定型文}
+      // {ハッシュタグ}
+      // {記事URL}
+      const introPart = introMsg ? introMsg : '';
+      const previewText = `${introPart}\n\n${currentHeader}\n${tags}\n${articleUrl}`;
+
+      // プレビュー表示の更新
+      previewArea.textContent = previewText;
+
+      // X投稿ボタンのリンク生成
+      xPostBtn.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(previewText)}`;
+    }
+
+    // トースト通知の表示
+    function showToast(message) {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      
+      // チェックマークアイコン付き
+      toast.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        <span>${message}</span>
+      `;
+      
+      toastContainer.appendChild(toast);
+
+      // 一定時間後にフェードアウト
+      setTimeout(() => {
+        toast.classList.add('fade-out');
+        toast.addEventListener('transitionend', () => {
+          toast.remove();
+        });
+      }, 1800);
+    }
+
+    // クリップボードへのコピーアクション
+    async function copyToClipboard() {
+      const text = previewArea.textContent;
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast('クリップボードにコピーしました');
+
+        // ボタンの視覚フィードバック
+        copyBtn.classList.add('copied');
+        const textSpan = copyBtn.querySelector('span');
+        const originalText = textSpan.textContent;
+        textSpan.textContent = 'コピー完了';
+        
+        setTimeout(() => {
+          copyBtn.classList.remove('copied');
+          textSpan.textContent = originalText;
+        }, 1500);
+      } catch (err) {
+        console.error('Copy failed:', err);
+        // フォールバック: textareaを使ったコピー
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed'; // 画面外に配置
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          document.execCommand('copy');
+          showToast('クリップボードにコピーしました (FB)');
+        } catch (e) {
+          alert('コピーに失敗しました。手動でプレビューからコピーしてください。');
+        }
+        document.body.removeChild(textarea);
+      }
+    }
+
+    // イベントリスナーのセットアップ
+    function init() {
+      // 初期ヘッダー設定
+      rollHeader();
+
+      // URL入力欄のクリアボタン制御
+      articleUrlInput.addEventListener('input', () => {
+        if (articleUrlInput.value.length > 0) {
+          clearUrlBtn.style.display = 'flex';
+        } else {
+          clearUrlBtn.style.display = 'none';
+        }
+        updatePreview();
+      });
+
+      clearUrlBtn.addEventListener('click', () => {
+        articleUrlInput.value = '';
+        clearUrlBtn.style.display = 'none';
+        articleUrlInput.focus();
+        updatePreview();
+      });
+
+      // 冒頭メッセージ変更時の更新
+      introMsgInput.addEventListener('input', updatePreview);
+
+      // カテゴリピルの変更処理
+      categoryPillsContainer.addEventListener('click', (e) => {
+        const pill = e.target.closest('.category-pill');
+        if (!pill) return;
+
+        // 全てのアクティブ状態を削除
+        categoryPillsContainer.querySelectorAll('.category-pill').forEach(btn => {
+          btn.classList.remove('active');
+        });
+
+        // クリックされたピルをアクティブ化
+        pill.classList.add('active');
+        selectedCategory = pill.dataset.category;
+        
+        updatePreview();
+      });
+
+      // 引き直しボタンの処理
+      redrawBtn.addEventListener('click', () => {
+        rollHeader();
+        updatePreview();
+      });
+
+      // コピーボタンの処理
+      copyBtn.addEventListener('click', copyToClipboard);
+
+      // 初期プレビュー表示
+      updatePreview();
+    }
+
+    // アプリケーション初期化
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
