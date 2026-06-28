@@ -491,7 +491,7 @@
   <div id="toast-container" class="toast-container"></div>
 
   <script>
-    // JS定数: ハッシュタグの定義 (記事内容に寄せたタグ + ブランドタグ)
+    // JS定数: ハッシュタグの定義 (カテゴリタグ + URL由来の補助タグ + ブランドタグ)
     const CATEGORY_HASHTAGS = {
       '経済': '#経済ニュース',
       'テクノロジー': '#テックニュース',
@@ -614,14 +614,12 @@
       return `#${normalized}`;
     }
 
-    function getSearchText(introMsg, articleUrl) {
+    function getUrlSearchText(articleUrl) {
       const decodedUrl = safeDecodeText(articleUrl);
-      const urlWords = decodedUrl
+      return decodedUrl
         .replace(/^https?:\/\/[^/]+/i, ' ')
         .replace(/%[0-9a-f]{2}/gi, ' ')
         .replace(/[/?#=&._-]+/g, ' ');
-
-      return `${introMsg} ${urlWords}`;
     }
 
     function collectRuleBasedTags(category, searchText) {
@@ -661,8 +659,8 @@
       return candidates;
     }
 
-    function buildHashtags(category, introMsg, articleUrl) {
-      const searchText = getSearchText(introMsg, articleUrl);
+    function buildHashtags(category, articleUrl) {
+      const searchText = getUrlSearchText(articleUrl);
       const categoryTag = CATEGORY_HASHTAGS[category] || '#ニュース';
       const contentTags = [
         ...collectRuleBasedTags(category, searchText),
@@ -671,9 +669,7 @@
       const uniqueContentTags = contentTags.filter((tag, index, array) => {
         return tag !== categoryTag && array.indexOf(tag) === index;
       });
-      const leadTags = uniqueContentTags.length > 0
-        ? uniqueContentTags.slice(0, 2)
-        : [categoryTag];
+      const leadTags = [categoryTag, ...uniqueContentTags.slice(0, 1)];
 
       return [...leadTags, ...BRAND_HASHTAGS].join(' ');
     }
@@ -683,7 +679,7 @@
       const articleUrl = articleUrlInput.value.trim();
       const introMsg = introMsgInput.value.trim();
       const currentHeader = HEADERS[currentHeaderIndex] || '';
-      const tags = buildHashtags(selectedCategory, introMsg, articleUrl);
+      const tags = buildHashtags(selectedCategory, articleUrl);
 
       // フォーマット:
       // {冒頭メッセージ（空なら空行）}
