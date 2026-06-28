@@ -446,6 +446,12 @@
         </div>
       </div>
 
+      <!-- Custom Hashtag Input -->
+      <div class="form-group">
+        <label for="custom-hashtags" class="form-label">カスタムハッシュタグ (任意)</label>
+        <input type="text" id="custom-hashtags" class="form-input" placeholder="#AI #半導体  または  AI 半導体" autocomplete="off" spellcheck="false">
+      </div>
+
       <!-- Redraw Header -->
       <div class="form-group">
         <label class="form-label">ヘッダー定型文</label>
@@ -491,57 +497,17 @@
   <div id="toast-container" class="toast-container"></div>
 
   <script>
-    // JS定数: ハッシュタグの定義 (カテゴリタグ + URL由来の補助タグ + ブランドタグ)
+    // JS定数: ハッシュタグの定義 (カテゴリタグ + 任意タグ + ブランドタグ)
     const CATEGORY_HASHTAGS = {
       '経済': '#経済ニュース',
-      'テクノロジー': '#テックニュース',
+      'テクノロジー': '#テクノロジー',
       'スポーツ': '#スポーツニュース',
       '社会': '#ニュース',
-      'サイエンス': '#科学ニュース',
-      'エンタメ': '#エンタメニュース'
+      'サイエンス': '#サイエンス',
+      'エンタメ': '#エンタメ'
     };
 
     const BRAND_HASHTAGS = ['#FLIPNEWS', '#頑張らないで読もう'];
-
-    const TOPIC_HASHTAG_RULES = [
-      { tag: '#株式市場', categories: ['経済'], keywords: ['株価', '日経平均', 'topix', 'nasdaq', 'nyダウ', 'ダウ平均', 's&p500', '市場'] },
-      { tag: '#為替', categories: ['経済'], keywords: ['為替', '円安', '円高', 'ドル円', 'ユーロ円', 'fx'] },
-      { tag: '#金融政策', categories: ['経済'], keywords: ['金利', '利上げ', '利下げ', '日銀', 'frb', 'fomc', '中央銀行', '政策金利'] },
-      { tag: '#物価高', categories: ['経済', '社会'], keywords: ['物価', 'インフレ', '値上げ', '価格高騰', '賃上げ', '実質賃金'] },
-      { tag: '#企業決算', categories: ['経済'], keywords: ['決算', '売上高', '営業利益', '純利益', '業績', '上方修正', '下方修正'] },
-      { tag: '#暗号資産', categories: ['経済', 'テクノロジー'], keywords: ['暗号資産', '仮想通貨', 'ビットコイン', 'bitcoin', 'btc', 'イーサリアム', 'ethereum'] },
-      { tag: '#AI', categories: ['テクノロジー', 'サイエンス'], keywords: ['ai', '人工知能', '生成ai', 'chatgpt', 'openai', 'llm', '機械学習'] },
-      { tag: '#半導体', categories: ['テクノロジー', '経済'], keywords: ['半導体', 'tsmc', 'nvidia', 'gpu', 'arm', 'チップ', '先端半導体'] },
-      { tag: '#サイバーセキュリティ', categories: ['テクノロジー', '社会'], keywords: ['サイバー', '情報流出', '不正アクセス', 'ランサムウェア', '脆弱性', 'ハッキング'] },
-      { tag: '#スマホ', categories: ['テクノロジー'], keywords: ['スマホ', 'iphone', 'android', 'アプリ', 'モバイル', '端末'] },
-      { tag: '#EV', categories: ['テクノロジー', '経済'], keywords: ['ev', '電気自動車', 'tesla', 'テスラ', 'バッテリー', '充電'] },
-      { tag: '#スタートアップ', categories: ['テクノロジー', '経済'], keywords: ['スタートアップ', '資金調達', 'ipo', 'ユニコーン', 'ベンチャー'] },
-      { tag: '#MLB', categories: ['スポーツ'], keywords: ['mlb', '大谷', 'ドジャース', 'メジャー', 'ホームラン', '二刀流'] },
-      { tag: '#サッカー', categories: ['スポーツ'], keywords: ['サッカー', 'jリーグ', '日本代表', 'w杯', 'ワールドカップ', 'ゴール'] },
-      { tag: '#バスケ', categories: ['スポーツ'], keywords: ['バスケ', 'nba', 'bリーグ', 'レイカーズ', 'ウォリアーズ'] },
-      { tag: '#オリンピック', categories: ['スポーツ'], keywords: ['五輪', 'オリンピック', 'パラリンピック', 'メダル'] },
-      { tag: '#政治', categories: ['社会', '経済'], keywords: ['政府', '首相', '国会', '選挙', '政権', '法案', '与党', '野党'] },
-      { tag: '#災害情報', categories: ['社会'], keywords: ['地震', '台風', '大雨', '豪雨', '避難', '災害', '津波', '猛暑'] },
-      { tag: '#国際ニュース', categories: ['社会', '経済'], keywords: ['米国', 'アメリカ', '中国', '欧州', 'ロシア', 'ウクライナ', '中東', 'g7', '国連', '外交'] },
-      { tag: '#働き方', categories: ['社会', '経済'], keywords: ['働き方', '転職', '雇用', '人手不足', 'リモートワーク', '副業', '最低賃金'] },
-      { tag: '#教育', categories: ['社会'], keywords: ['教育', '学校', '大学', '入試', '授業', '奨学金', '学習'] },
-      { tag: '#宇宙', categories: ['サイエンス'], keywords: ['宇宙', 'nasa', 'jaxa', 'ロケット', '月面', '火星', '衛星'] },
-      { tag: '#医療ニュース', categories: ['サイエンス', '社会'], keywords: ['医療', 'ワクチン', '感染症', '治療薬', '病院', 'がん', '認知症'] },
-      { tag: '#気候変動', categories: ['サイエンス', '社会'], keywords: ['気候変動', '温暖化', '脱炭素', 'co2', '再生可能エネルギー', '猛暑'] },
-      { tag: '#研究', categories: ['サイエンス'], keywords: ['研究', '論文', '実験', '発見', '大学', '科学者'] },
-      { tag: '#映画', categories: ['エンタメ'], keywords: ['映画', '興行収入', '公開', '主演', '監督', 'アカデミー賞'] },
-      { tag: '#音楽', categories: ['エンタメ'], keywords: ['音楽', 'アルバム', 'ライブ', 'ツアー', '楽曲', 'アーティスト'] },
-      { tag: '#アニメ', categories: ['エンタメ'], keywords: ['アニメ', '漫画', 'マンガ', '声優', '配信', 'シリーズ'] },
-      { tag: '#ゲーム', categories: ['エンタメ', 'テクノロジー'], keywords: ['ゲーム', '任天堂', 'switch', 'playstation', 'ps5', 'steam', 'esports'] },
-      { tag: '#芸能ニュース', categories: ['エンタメ'], keywords: ['俳優', '女優', 'タレント', '芸能', '結婚', '熱愛', 'ドラマ'] }
-    ];
-
-    const HASHTAG_STOP_WORDS = new Set([
-      'ニュース', 'アプリ', '記事', '全文', '無料', '登録不要', 'チェック', 'まとめ',
-      'こちら', 'これ', 'それ', 'ため', 'こと', 'もの', 'さん', 'する', 'した',
-      'about', 'article', 'articles', 'news', 'post', 'forge', 'flipnews', 'http', 'https',
-      'market', 'weather', 'movie', 'game', 'games', 'story', 'column', 'pickup', 'detail'
-    ]);
 
     // JS定数: ヘッダー定型文 (10種)
     const HEADERS = [
@@ -565,6 +531,7 @@
     const articleUrlInput = document.getElementById('article-url');
     const clearUrlBtn = document.getElementById('clear-url-btn');
     const introMsgInput = document.getElementById('intro-message');
+    const customHashtagsInput = document.getElementById('custom-hashtags');
     const categoryPillsContainer = document.getElementById('category-pills');
     const currentHeaderDisplay = document.getElementById('current-header');
     const redrawBtn = document.getElementById('redraw-btn');
@@ -584,102 +551,41 @@
       currentHeaderDisplay.textContent = HEADERS[currentHeaderIndex];
     }
 
-    function safeDecodeText(text) {
-      try {
-        return decodeURIComponent(text);
-      } catch (err) {
-        return text;
-      }
-    }
-
-    function normalizeForHashtags(text) {
-      return text
-        .normalize('NFKC')
-        .toLowerCase()
-        .replace(/[‐‑‒–—―ー]/g, '-');
-    }
-
     function normalizeTag(tag) {
       return tag
         .replace(/^#+/, '')
-        .replace(/[^\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}a-zA-Z0-9_]/gu, '')
+        .replace(/[^\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}a-zA-Z0-9_ー]/gu, '')
         .trim();
     }
 
     function toHashtag(text) {
-      const normalized = normalizeTag(text);
-      if (!normalized || HASHTAG_STOP_WORDS.has(normalized.toLowerCase())) return '';
-      if (/^[a-f0-9]{2}$/i.test(normalized)) return '';
-      if (normalized.length < 2 || normalized.length > 18) return '';
-      return `#${normalized}`;
+      const tagText = normalizeTag(text.normalize('NFKC'));
+      return tagText ? `#${tagText}` : '';
     }
 
-    function getUrlSearchText(articleUrl) {
-      const decodedUrl = safeDecodeText(articleUrl);
-      return decodedUrl
-        .replace(/^https?:\/\/[^/]+/i, ' ')
-        .replace(/%[0-9a-f]{2}/gi, ' ')
-        .replace(/[/?#=&._-]+/g, ' ');
+    function parseCustomHashtags(text) {
+      return text
+        .split(/[\s,、，]+/)
+        .map(toHashtag)
+        .filter(Boolean);
     }
 
-    function collectRuleBasedTags(category, searchText) {
-      const normalizedText = normalizeForHashtags(searchText);
-
-      return TOPIC_HASHTAG_RULES
-        .map((rule, index) => {
-          const keywordScore = rule.keywords.reduce((score, keyword) => {
-            const normalizedKeyword = normalizeForHashtags(keyword);
-            return normalizedText.includes(normalizedKeyword) ? score + 1 : score;
-          }, 0);
-
-          return {
-            tag: rule.tag,
-            score: keywordScore + (rule.categories.includes(category) ? 0.4 : 0),
-            index
-          };
-        })
-        .filter((rule) => rule.score >= 1)
-        .sort((a, b) => b.score - a.score || a.index - b.index)
-        .map((rule) => rule.tag);
-    }
-
-    function collectExtractedTags(searchText) {
-      const candidates = [];
-      const decodedText = safeDecodeText(searchText).normalize('NFKC');
-      const existingTags = decodedText.match(/#[\p{L}\p{N}_一-龠ぁ-んァ-ヶー]+/gu) || [];
-      const englishTerms = decodedText.match(/\b[A-Za-z][A-Za-z0-9]{1,14}\b/g) || [];
-      const katakanaTerms = decodedText.match(/[ァ-ヶー]{3,18}/g) || [];
-
-      [...existingTags, ...englishTerms, ...katakanaTerms].forEach((term) => {
-        if (!term.startsWith('#') && /^[a-z0-9]+$/.test(term)) return;
-        const tag = toHashtag(term);
-        if (tag) candidates.push(tag);
-      });
-
-      return candidates;
-    }
-
-    function buildHashtags(category, articleUrl) {
-      const searchText = getUrlSearchText(articleUrl);
+    function buildHashtags(category, customHashtags) {
       const categoryTag = CATEGORY_HASHTAGS[category] || '#ニュース';
-      const contentTags = [
-        ...collectRuleBasedTags(category, searchText),
-        ...collectExtractedTags(searchText)
-      ];
-      const uniqueContentTags = contentTags.filter((tag, index, array) => {
-        return tag !== categoryTag && array.indexOf(tag) === index;
+      const fixedTags = [categoryTag, ...BRAND_HASHTAGS];
+      const customTags = parseCustomHashtags(customHashtags).filter((tag) => {
+        return !fixedTags.includes(tag);
       });
-      const leadTags = [categoryTag, ...uniqueContentTags.slice(0, 1)];
-
-      return [...leadTags, ...BRAND_HASHTAGS].join(' ');
+      return [categoryTag, ...new Set(customTags), ...BRAND_HASHTAGS].join(' ');
     }
 
     // プレビューのリアルタイム生成と描画
     function updatePreview() {
       const articleUrl = articleUrlInput.value.trim();
       const introMsg = introMsgInput.value.trim();
+      const customHashtags = customHashtagsInput.value.trim();
       const currentHeader = HEADERS[currentHeaderIndex] || '';
-      const tags = buildHashtags(selectedCategory, articleUrl);
+      const tags = buildHashtags(selectedCategory, customHashtags);
 
       // フォーマット:
       // {冒頭メッセージ（空なら空行）}
@@ -778,6 +684,9 @@
 
       // 冒頭メッセージ変更時の更新
       introMsgInput.addEventListener('input', updatePreview);
+
+      // カスタムハッシュタグ変更時の更新
+      customHashtagsInput.addEventListener('input', updatePreview);
 
       // カテゴリピルの変更処理
       categoryPillsContainer.addEventListener('click', (e) => {
