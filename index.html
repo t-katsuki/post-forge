@@ -446,6 +446,12 @@
         </div>
       </div>
 
+      <!-- Custom Hashtag Input -->
+      <div class="form-group">
+        <label for="custom-hashtags" class="form-label">カスタムハッシュタグ (任意)</label>
+        <input type="text" id="custom-hashtags" class="form-input" placeholder="#AI #半導体  または  AI 半導体" autocomplete="off" spellcheck="false">
+      </div>
+
       <!-- Redraw Header -->
       <div class="form-group">
         <label class="form-label">ヘッダー定型文</label>
@@ -491,15 +497,17 @@
   <div id="toast-container" class="toast-container"></div>
 
   <script>
-    // JS定数: ハッシュタグの定義 (カテゴリ固定メイン1個 + ブランドタグ2個)
-    const HASHTAGS = {
-      '経済': '#経済ニュース #FLIPNEWS #頑張らないで読もう',
-      'テクノロジー': '#テクノロジー #FLIPNEWS #頑張らないで読もう',
-      'スポーツ': '#スポーツニュース #FLIPNEWS #頑張らないで読もう',
-      '社会': '#ニュース #FLIPNEWS #頑張らないで読もう',
-      'サイエンス': '#サイエンス #FLIPNEWS #頑張らないで読もう',
-      'エンタメ': '#エンタメ #FLIPNEWS #頑張らないで読もう'
+    // JS定数: ハッシュタグの定義 (カテゴリタグ + 任意タグ + ブランドタグ)
+    const CATEGORY_HASHTAGS = {
+      '経済': '#経済ニュース',
+      'テクノロジー': '#テクノロジー',
+      'スポーツ': '#スポーツニュース',
+      '社会': '#ニュース',
+      'サイエンス': '#サイエンス',
+      'エンタメ': '#エンタメ'
     };
+
+    const BRAND_HASHTAGS = ['#FLIPNEWS', '#頑張らないで読もう'];
 
     // JS定数: ヘッダー定型文 (10種)
     const HEADERS = [
@@ -523,6 +531,7 @@
     const articleUrlInput = document.getElementById('article-url');
     const clearUrlBtn = document.getElementById('clear-url-btn');
     const introMsgInput = document.getElementById('intro-message');
+    const customHashtagsInput = document.getElementById('custom-hashtags');
     const categoryPillsContainer = document.getElementById('category-pills');
     const currentHeaderDisplay = document.getElementById('current-header');
     const redrawBtn = document.getElementById('redraw-btn');
@@ -542,12 +551,41 @@
       currentHeaderDisplay.textContent = HEADERS[currentHeaderIndex];
     }
 
+    function normalizeTag(tag) {
+      return tag
+        .replace(/^#+/, '')
+        .replace(/[^\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}a-zA-Z0-9_ー]/gu, '')
+        .trim();
+    }
+
+    function toHashtag(text) {
+      const tagText = normalizeTag(text.normalize('NFKC'));
+      return tagText ? `#${tagText}` : '';
+    }
+
+    function parseCustomHashtags(text) {
+      return text
+        .split(/[\s,、，]+/)
+        .map(toHashtag)
+        .filter(Boolean);
+    }
+
+    function buildHashtags(category, customHashtags) {
+      const categoryTag = CATEGORY_HASHTAGS[category] || '#ニュース';
+      const fixedTags = [categoryTag, ...BRAND_HASHTAGS];
+      const customTags = parseCustomHashtags(customHashtags).filter((tag) => {
+        return !fixedTags.includes(tag);
+      });
+      return [categoryTag, ...new Set(customTags), ...BRAND_HASHTAGS].join(' ');
+    }
+
     // プレビューのリアルタイム生成と描画
     function updatePreview() {
       const articleUrl = articleUrlInput.value.trim();
       const introMsg = introMsgInput.value.trim();
+      const customHashtags = customHashtagsInput.value.trim();
       const currentHeader = HEADERS[currentHeaderIndex] || '';
-      const tags = HASHTAGS[selectedCategory] || '';
+      const tags = buildHashtags(selectedCategory, customHashtags);
 
       // フォーマット:
       // {冒頭メッセージ（空なら空行）}
@@ -646,6 +684,9 @@
 
       // 冒頭メッセージ変更時の更新
       introMsgInput.addEventListener('input', updatePreview);
+
+      // カスタムハッシュタグ変更時の更新
+      customHashtagsInput.addEventListener('input', updatePreview);
 
       // カテゴリピルの変更処理
       categoryPillsContainer.addEventListener('click', (e) => {
